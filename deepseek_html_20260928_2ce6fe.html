@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RUST GUIDE — Зимний гайд</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ice-blue: #4fc3f7;
+    --ice-deep: #1e88e5;
+    --ice-glow: #81d4fa;
+    --frost: #b3e5fc;
+    --dark: #0a0f1a;
+    --panel: rgba(20, 30, 45, 0.85);
+    --text: #e3f2fd;
+    --muted: #8aa8c7;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ============================================
+     ФОНОВЫЕ СЛОИ — ЗИМНИЙ ГРАДИЕНТ + СЕТКА
+     ============================================ */
+  .bg-layers {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .bg-gradient {
+    position: absolute;
+    inset: -20%;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(79, 195, 247, 0.22), transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(129, 212, 250, 0.15), transparent 45%),
+      radial-gradient(circle at 50% 50%, rgba(30, 136, 229, 0.12), transparent 60%);
+    animation: gradientMove 20s ease-in-out infinite alternate;
+    filter: blur(20px);
+  }
+
+  @keyframes gradientMove {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(3%, -3%) scale(1.08); }
+    100% { transform: translate(-3%, 3%) scale(1.05); }
+  }
+
+  .bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79, 195, 247, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79, 195, 247, 0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(circle at 50% 40%, #000 20%, transparent 80%);
+  }
+
+  /* Прогресс-бар скролла */
+  .scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--ice-deep), var(--ice-blue), var(--ice-glow));
+    z-index: 1001;
+    box-shadow: 0 0 15px var(--ice-blue);
+    transition: width 0.1s linear;
+  }
+
+  /* ============================================
+     СНЕЖИНКИ
+     ============================================ */
+  #snow {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .snowflake {
+    position: absolute;
+    top: -10px;
+    color: #fff;
+    user-select: none;
+    pointer-events: none;
+    opacity: 0.85;
+    text-shadow: 0 0 8px var(--ice-glow);
+    animation: fall linear infinite;
+    will-change: transform;
+  }
+
+  @keyframes fall {
+    0% {
+      transform: translateY(-10px) translateX(0) rotate(0deg);
+      opacity: 0;
+    }
+    10% { opacity: 0.9; }
+    90% { opacity: 0.9; }
+    100% {
+      transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rotate));
+      opacity: 0;
+    }
+  }
+
+  /* ============================================
+     ШАПКА
+     ============================================ */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(10, 15, 26, 0.7);
+    backdrop-filter: blur(15px);
+    padding: 18px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+    transition: padding 0.3s, background 0.3s;
+  }
+
+  header.scrolled {
+    padding: 12px 40px;
+    background: rgba(10, 15, 26, 0.95);
+    border-bottom-color: var(--ice-blue);
+  }
+
+  .logo {
+    font-size: 26px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo::before {
+    content: '';
+    width: 10px; height: 10px;
+    background: var(--ice-blue);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--ice-blue);
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseDot {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 15px var(--ice-blue); }
+    50%      { transform: scale(1.3); box-shadow: 0 0 25px var(--ice-glow); }
+  }
+
+  .logo span { color: var(--ice-blue); }
+
+  nav a {
+    color: var(--text);
+    text-decoration: none;
+    margin-left: 25px;
+    font-weight: 500;
+    font-size: 15px;
+    transition: all 0.3s;
+    position: relative;
+    display: inline-block;
+    padding: 5px 0;
+  }
+
+  nav a::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--ice-blue);
+    transition: width 0.3s;
+  }
+
+  nav a:hover { color: var(--ice-blue); }
+  nav a:hover::after { width: 100%; }
+
+  /* ============================================
+     HERO
+     ============================================ */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 120px 20px 80px;
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 20px;
+    background: rgba(79, 195, 247, 0.15);
+    border: 1px solid rgba(79, 195, 247, 0.4);
+    border-radius: 30px;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ice-glow);
+    margin-bottom: 30px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.2s forwards;
+  }
+
+  .hero-badge::before {
+    content: '❄';
+    font-size: 16px;
+    animation: spinFlake 4s linear infinite;
+  }
+
+  @keyframes spinFlake {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .hero h1 {
+    font-size: clamp(48px, 10vw, 130px);
+    line-height: 0.95;
+    color: #fff;
+    letter-spacing: 6px;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    font-weight: 900;
+    position: relative;
+  }
+
+  .hero h1 .line-1 {
+    display: block;
+    background: linear-gradient(180deg, #fff 0%, #8aa8c7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero h1 .line-2 {
+    display: block;
+    background: linear-gradient(90deg, var(--ice-deep), var(--ice-blue), var(--ice-glow), var(--ice-blue));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textGradient 4s linear infinite;
+    filter: drop-shadow(0 0 30px rgba(79, 195, 247, 0.6));
+  }
+
+  @keyframes textGradient {
+    0%   { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .hero h1 .word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(80px) rotateX(-90deg);
+    animation: letterDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes letterDrop {
+    to { opacity: 1; transform: translateY(0) rotateX(0); }
+  }
+
+  .hero h1 .word:nth-child(1) { animation-delay: 0.4s; }
+  .hero h1 .word:nth-child(2) { animation-delay: 0.55s; }
+
+  .hero p {
+    font-size: 19px;
+    color: #8aa8c7;
+    margin-bottom: 45px;
+    max-width: 650px;
+    opacity: 0;
+    animation: fadeUp 1s ease 1.4s forwards;
+  }
+
+  .hero .buttons {
+    opacity: 0;
+    animation: fadeUp 1s ease 1.7s forwards;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 50px;
+    margin-top: 70px;
+    opacity: 0;
+    animation: fadeUp 1s ease 2s forwards;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hero-stat {
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-stat .num {
+    font-size: 36px;
+    font-weight: 900;
+    color: #fff;
+    display: block;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero-stat .num .accent { color: var(--ice-blue); }
+
+  .hero-stat .lbl {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  .hero-stat::after {
+    content: '';
+    position: absolute;
+    right: -25px; top: 50%;
+    height: 40px;
+    width: 1px;
+    background: rgba(79, 195, 247, 0.3);
+    transform: translateY(-50%);
+  }
+  .hero-stat:last-child::after { display: none; }
+
+  /* Летающие снежинки-иконки */
+  .floating-icon {
+    position: absolute;
+    font-size: 42px;
+    opacity: 0.4;
+    animation: floatAround 7s ease-in-out infinite;
+    pointer-events: none;
+    filter: drop-shadow(0 0 12px var(--ice-blue));
+    z-index: 1;
+    color: var(--frost);
+  }
+  .floating-icon:nth-of-type(1) { top: 20%; left: 8%;  animation-delay: 0s;   }
+  .floating-icon:nth-of-type(2) { top: 30%; right: 10%; animation-delay: 1.5s; }
+  .floating-icon:nth-of-type(3) { bottom: 22%; left: 12%;  animation-delay: 3s;   }
+  .floating-icon:nth-of-type(4) { bottom: 18%; right: 8%;  animation-delay: 4.5s; }
+
+  @keyframes floatAround {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25%      { transform: translate(20px, -30px) rotate(15deg); }
+    50%      { transform: translate(-15px, -15px) rotate(-10deg); }
+    75%      { transform: translate(15px, 20px) rotate(5deg); }
+  }
+
+  .scroll-down {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeUp 1s ease 2.3s forwards;
+    text-align: center;
+  }
+
+  .scroll-down::after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--ice-blue), transparent);
+    margin: 12px auto 0;
+    animation: scrollLine 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollLine {
+    0%, 100% { transform: scaleY(0.5); opacity: 0.5; }
+    50%      { transform: scaleY(1);   opacity: 1; }
+  }
+
+  /* ============================================
+     КНОПКИ
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 38px;
+    background: var(--ice-deep);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-radius: 6px;
+    transition: all 0.3s;
+    border: 2px solid var(--ice-deep);
+    cursor: pointer;
+    font-size: 14px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(30, 136, 229, 0.35);
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 0; height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s, height 0.5s;
+  }
+
+  .btn:hover::before { width: 400px; height: 400px; }
+
+  .btn:hover {
+    background: transparent;
+    color: var(--ice-blue);
+    box-shadow: 0 0 35px var(--ice-blue);
+    transform: translateY(-3px);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border-color: rgba(227, 242, 253, 0.3);
+    box-shadow: none;
+  }
+
+  .btn-outline:hover {
+    border-color: var(--ice-blue);
+    color: var(--ice-blue);
+    background: rgba(79, 195, 247, 0.08);
+  }
+
+  /* ============================================
+     СЕКЦИИ
+     ============================================ */
+  section {
+    padding: 110px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  .section-head {
+    text-align: center;
+    margin-bottom: 70px;
+  }
+
+  .section-label {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--ice-blue);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    font-weight: 700;
+    position: relative;
+    padding: 0 45px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.7s;
+  }
+
+  .section-label::before,
+  .section-label::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30px;
+    height: 1px;
+    background: var(--ice-blue);
+  }
+  .section-label::before { left: 0; }
+  .section-label::after  { right: 0; }
+
+  section h2 {
+    font-size: clamp(32px, 5vw, 52px);
+    color: #fff;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 900;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.9s ease;
+  }
+
+  section h2 .accent {
+    color: var(--ice-blue);
+    text-shadow: 0 0 30px rgba(79, 195, 247, 0.5);
+  }
+
+  section h2.visible { opacity: 1; transform: translateY(0); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 640px;
+    margin: 0 auto;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease 0.2s;
+  }
+
+  .subtitle.visible { opacity: 1; transform: translateY(0); }
+  .section-label.visible { opacity: 1; transform: translateY(0); }
+
+  /* ============================================
+     БИНДЫ
+     ============================================ */
+  .note {
+    background: linear-gradient(90deg, rgba(79, 195, 247, 0.15), rgba(79, 195, 247, 0.02));
+    border-left: 4px solid var(--ice-blue);
+    padding: 18px 22px;
+    border-radius: 8px;
+    margin-bottom: 35px;
+    font-size: 15px;
+    color: #cfe4f5;
+    opacity: 0;
+    transform: translateX(-40px);
+    transition: all 0.7s ease;
+  }
+  .note.visible { opacity: 1; transform: translateX(0); }
+  .note b { color: var(--ice-blue); }
+
+  .note code {
+    font-family: 'Consolas', monospace;
+    background: #0a0f1a;
+    color: var(--ice-glow);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  .binds-table {
+    background: var(--panel);
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(79, 195, 247, 0.25);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .bind-row {
+    display: grid;
+    grid-template-columns: 260px 1fr auto;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 28px;
+    border-bottom: 1px solid rgba(79, 195, 247, 0.1);
+    transition: all 0.3s;
+    opacity: 0;
+    transform: translateX(-60px);
+    position: relative;
+  }
+
+  .bind-row.visible { opacity: 1; transform: translateX(0); }
+  .bind-row:last-child { border-bottom: none; }
+
+  .bind-row:hover {
+    background: rgba(79, 195, 247, 0.08);
+    transform: translateX(8px) !important;
+    box-shadow: -4px 0 0 var(--ice-blue);
+  }
+
+  .bind-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bind-name::before {
+    content: '❄';
+    color: var(--ice-blue);
+    font-size: 12px;
+  }
+
+  .bind-cmd {
+    font-family: 'Consolas', monospace;
+    background: #05080f;
+    color: var(--ice-glow);
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 13px;
+    overflow-x: auto;
+    white-space: nowrap;
+    border: 1px solid rgba(79, 195, 247, 0.2);
+  }
+
+  .bind-cmd::-webkit-scrollbar { height: 4px; }
+  .bind-cmd::-webkit-scrollbar-thumb { background: var(--ice-blue); border-radius: 2px; }
+
+  .copy-btn {
+    background: transparent;
+    border: 1px solid var(--ice-blue);
+    color: var(--ice-blue);
+    padding: 9px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .copy-btn:hover {
+    background: var(--ice-blue);
+    color: #0a0f1a;
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(79, 195, 247, 0.6);
+  }
+
+  .copy-btn.copied {
+    background: #2a7d2a;
+    border-color: #2a7d2a;
+    color: #fff;
+    animation: pop 0.3s;
+  }
+
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  /* ============================================
+     ОПТИМИЗАЦИЯ
+     ============================================ */
+  .checklist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px;
+  }
+
+  .check-card {
+    background: var(--panel);
+    padding: 32px 28px;
+    border-radius: 16px;
+    border: 1px solid rgba(79, 195, 247, 0.2);
+    backdrop-filter: blur(12px);
+    transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0;
+    transform: translateY(60px) rotateX(-15deg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .check-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--ice-blue), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+
+  .check-card.visible {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+
+  .check-card.visible::before { transform: translateX(100%); }
+
+  .check-card:hover {
+    transform: translateY(-12px) !important;
+    box-shadow: 0 25px 60px rgba(79, 195, 247, 0.35);
+    border-color: var(--ice-blue);
+  }
+
+  .check-card h3 {
+    color: #fff;
+    font-size: 19px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .check-card h3 .icon {
+    font-size: 26px;
+    display: inline-block;
+    animation: iconBounce 2.5s ease-in-out infinite;
+  }
+
+  @keyframes iconBounce {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50%      { transform: translateY(-6px) rotate(6deg); }
+  }
+
+  .check-card ul { list-style: none; }
+
+  .check-card li {
+    padding: 10px 0 10px 28px;
+    position: relative;
+    color: #cfe4f5;
+    font-size: 14px;
+    border-bottom: 1px dashed rgba(79, 195, 247, 0.15);
+    transition: all 0.3s;
+  }
+
+  .check-card li:last-child { border-bottom: none; }
+
+  .check-card li:hover {
+    color: #fff;
+    padding-left: 34px;
+  }
+
+  .check-card li::before {
+    content: '❄';
+    position: absolute;
+    left: 6px;
+    color: var(--ice-blue);
+    font-size: 11px;
+    transition: transform 0.3s;
+  }
+  .check-card li:hover::before { transform: translateX(4px); }
+
+  .off { color: #ff8a8a; font-weight: 700; }
+  .on  { color: #8affa8; font-weight: 700; }
+
+  /* ============================================
+     СЕССИОННЫЕ КОМАНДЫ
+     ============================================ */
+  .session-cmd {
+    background: linear-gradient(135deg, #05080f, #0a1a2a);
+    border: 1px solid var(--ice-blue);
+    border-radius: 14px;
+    padding: 30px;
+    margin-top: 20px;
+    position: relative;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+  }
+
+  .session-cmd::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(79, 195, 247, 0.15), transparent 40%);
+    animation: rotateGlow 8s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes rotateGlow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .session-cmd.visible {
+    opacity: 1;
+    transform: scale(1);
+    animation: borderGlow 3s ease-in-out infinite;
+  }
+
+  @keyframes borderGlow {
+    0%, 100% { box-shadow: 0 0 40px rgba(79, 195, 247, 0.2); }
+    50%      { box-shadow: 0 0 70px rgba(79, 195, 247, 0.5); }
+  }
+
+  .session-cmd code {
+    font-family: 'Consolas', monospace;
+    color: var(--ice-glow);
+    font-size: 14px;
+    word-break: break-all;
+    display: block;
+    line-height: 1.8;
+    padding-right: 140px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .session-cmd .copy-btn {
+    position: absolute;
+    top: 25px; right: 25px;
+    z-index: 2;
+  }
+
+  /* ============================================
+     СОВЕТЫ
+     ============================================ */
+  .tips {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  .tip {
+    background: var(--panel);
+    padding: 30px 26px;
+    border-radius: 14px;
+    border-left: 4px solid var(--ice-blue);
+    transition: all 0.4s;
+    opacity: 0;
+    transform: translateY(50px);
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tip::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(79, 195, 247, 0.08), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+
+  .tip.visible { opacity: 1; transform: translateY(0); }
+  .tip:hover::after { opacity: 1; }
+
+  .tip:hover {
+    transform: translateX(10px) !important;
+    border-left-color: var(--ice-glow);
+    box-shadow: -6px 0 30px rgba(79, 195, 247, 0.4);
+  }
+
+  .tip h3 {
+    color: #fff;
+    font-size: 17px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tip p { color: #9bb8d4; font-size: 14px; position: relative; z-index: 1; }
+
+  .tip code {
+    font-family: 'Consolas', monospace;
+    background: #05080f;
+    color: var(--ice-glow);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  /* ============================================
+     CTA
+     ============================================ */
+  .cta {
+    text-align: center;
+    padding: 90px 40px;
+    background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(129, 212, 250, 0.08));
+    border-radius: 20px;
+    margin: 60px auto;
+    max-width: 1000px;
+    border: 1px solid rgba(79, 195, 247, 0.3);
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+  }
+
+  .cta::before {
+    content: '';
+    position: absolute;
+    top: -100%; left: -100%;
+    width: 300%; height: 300%;
+    background: conic-gradient(from 0deg, transparent, rgba(79, 195, 247, 0.15), transparent 30%);
+    animation: rotateGlow 12s linear infinite;
+    pointer-events: none;
+  }
+
+  .cta > * { position: relative; z-index: 1; }
+
+  .cta h2 {
+    font-size: clamp(30px, 5vw, 44px);
+    color: #fff;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+  }
+
+  .cta h2 .accent {
+    color: var(--ice-blue);
+    text-shadow: 0 0 30px rgba(79, 195, 247, 0.7);
+  }
+
+  .cta p { color: #9bb8d4; margin-bottom: 35px; font-size: 17px; }
+
+  /* ============================================
+     ФУТЕР
+     ============================================ */
+  footer {
+    background: #05080f;
+    text-align: center;
+    padding: 35px 20px;
+    color: #557;
+    border-top: 2px solid var(--ice-blue);
+    font-size: 14px;
+    position: relative;
+    z-index: 2;
+  }
+
+  footer a { color: var(--ice-blue); text-decoration: none; }
+
+  /* Кнопка "наверх" */
+  #toTop {
+    position: fixed;
+    bottom: 30px; right: 30px;
+    width: 54px; height: 54px;
+    background: var(--ice-deep);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 22px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s;
+    z-index: 999;
+    box-shadow: 0 0 25px rgba(79, 195, 247, 0.6);
+  }
+
+  #toTop.show { opacity: 1; pointer-events: auto; }
+
+  #toTop:hover {
+    transform: translateY(-6px) scale(1.1);
+    box-shadow: 0 0 45px rgba(79, 195, 247, 0.9);
+  }
+
+  /* ============================================
+     АДАПТИВ
+     ============================================ */
+  @media (max-width: 768px) {
+    header { padding: 12px 15px; flex-direction: column; gap: 8px; }
+    nav a { margin: 0 8px; font-size: 13px; }
+    .logo { font-size: 18px; }
+    section { padding: 70px 18px; }
+    .btn { padding: 14px 28px; font-size: 13px; }
+    .hero .buttons { flex-direction: column; width: 100%; }
+    .hero .buttons .btn { width: 100%; justify-content: center; }
+    .hero-stats { gap: 30px; }
+    .hero-stat::after { display: none; }
+    .hero-stat .num { font-size: 28px; }
+
+    .bind-row { grid-template-columns: 1fr; gap: 12px; padding: 18px; }
+    .bind-cmd { white-space: normal; word-break: break-all; }
+    .copy-btn { width: 100%; }
+
+    .session-cmd code { padding-right: 0; }
+    .session-cmd .copy-btn { position: static; margin-top: 18px; width: 100%; }
+
+    .floating-icon { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Прогресс-бар -->
+<div class="scroll-progress" id="progress"></div>
+
+<!-- Фоновые слои -->
+<div class="bg-layers">
+  <div class="bg-gradient"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<!-- Снежинки -->
+<div id="snow"></div>
+
+<!-- Шапка -->
+<header id="header">
+  <div class="logo">RUST<span>GUIDE</span></div>
+  <nav>
+    <a href="#binds">Бинды</a>
+    <a href="#optimize">Оптимизация</a>
+    <a href="#session">Сессионные</a>
+    <a href="#tips">Советы</a>
+  </nav>
+</header>
+
+<!-- ============= HERO ============= -->
+<div class="hero">
+
+  <div class="floating-icon">❄</div>
+  <div class="floating-icon">❅</div>
+  <div class="floating-icon">❆</div>
+  <div class="floating-icon">❄</div>
+
+  <div class="hero-badge">Зимний сезон · Обновлено 2025</div>
+
+  <h1>
+    <span class="line-1">
+      <span class="word">RUST</span>
+    </span>
+    <span class="line-2">
+      <span class="word">ГАЙД</span>
+    </span>
+  </h1>
+
+  <p>Живой гайд по биндам, оптимизации и настройкам. Всё, чтобы играть комфортнее, видеть врагов первым и держать стабильный FPS в любом бою.</p>
+
+  <div class="buttons">
+    <a href="#binds" class="btn">❄ Смотреть бинды</a>
+    <a href="#optimize" class="btn btn-outline">⚙ Оптимизация</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="num" data-count="60">0</span>
+      <span class="lbl">Биндов и команд</span>
+    </div>
+    <div class="hero-stat">
+      <span class="num"><span class="accent">+</span><span data-count="40">0</span><span class="accent">%</span></span>
+      <span class="lbl">Рост FPS</span>
+    </div>
+    <div class="hero-stat">
+      <span class="num" data-count="24">0</span>
+      <span class="lbl">Часа в сутки</span>
+    </div>
+  </div>
+
+  <div class="scroll-down">Скролль вниз</div>
+</div>
+
+<!-- ============= БИНДЫ ============= -->
+<section id="binds">
+  <div class="section-head">
+    <div class="section-label">Команды</div>
+    <h2>Полезные <span class="accent">бинды</span></h2>
+    <p class="subtitle">Клик по кнопке — команда копируется в буфер. Вставь в консоль (F1) и нажми Enter.</p>
+  </div>
+
+  <div class="note">
+    ❄ <b>Важно:</b> после ввода всех биндов напиши в консоли <code>writecfg</code> — иначе они сбросятся после перезахода.
+  </div>
+
+  <div class="binds-table">
+    <div class="bind-row">
+      <div class="bind-name">Автобег (на Q)</div>
+      <div class="bind-cmd">bind q forward;sprint</div>
+      <button class="copy-btn" data-copy="bind q forward;sprint">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Автоатака (на Z)</div>
+      <div class="bind-cmd">bind z attack</div>
+      <button class="copy-btn" data-copy="bind z attack">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Автоатака + присед</div>
+      <div class="bind-cmd">bind z attack;duck</div>
+      <button class="copy-btn" data-copy="bind z attack;duck">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Быстрый лут (Mouse4)</div>
+      <div class="bind-cmd">bind mouse4 +hoverloot</div>
+      <button class="copy-btn" data-copy="bind mouse4 +hoverloot">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Быстрый Alt (обзор)</div>
+      <div class="bind-cmd">bind alt +altlook</div>
+      <button class="copy-btn" data-copy="bind alt +altlook">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Быстрое лечение (слот 3)</div>
+      <div class="bind-cmd">bind 3 +slot3;+use</div>
+      <button class="copy-btn" data-copy="bind 3 +slot3;+use">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Очистка кэша (на J)</div>
+      <div class="bind-cmd">bind j gc.collect; pool.clear_assets; pool.clear_memory; pool.clear_prefabs; gc.alloc</div>
+      <button class="copy-btn" data-copy="bind j gc.collect; pool.clear_assets; pool.clear_memory; pool.clear_prefabs; gc.alloc">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Combat log (на F2)</div>
+      <div class="bind-cmd">bind f2 client.consoletoggle; combatlog; client.ping</div>
+      <button class="copy-btn" data-copy="bind f2 client.consoletoggle; combatlog; client.ping">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Фонарик при прицеле</div>
+      <div class="bind-cmd">bind mouse1 +lighttoggle</div>
+      <button class="copy-btn" data-copy="bind mouse1 +lighttoggle">Копировать</button>
+    </div>
+    <div class="bind-row">
+      <div class="bind-name">Быстрый зум (Mouse3)</div>
+      <div class="bind-cmd">bind mouse3 +graphics.fov 90;+graphics.hud 1;graphics.fov 70;graphics.hud 0</div>
+      <button class="copy-btn" data-copy="bind mouse3 +graphics.fov 90;+graphics.hud 1;graphics.fov 70;graphics.hud 0">Копировать</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============= ОПТИМИЗАЦИЯ ============= -->
+<section id="optimize">
+  <div class="section-head">
+    <div class="section-label">Производительность</div>
+    <h2>Оптимизация <span class="accent">графики</span></h2>
+    <p class="subtitle">Меньше картинки — больше FPS и видимости врагов.</p>
+  </div>
+
+  <div class="checklist">
+    <div class="check-card">
+      <h3><span class="icon">🚫</span> Отключить</h3>
+      <ul>
+        <li>Тени — <span class="off">Off / 0</span></li>
+        <li>Облака — <span class="off">Off</span></li>
+        <li>Трава: тени и смещение — <span class="off">Off</span></li>
+        <li>Отражения воды — <span class="off">Off</span></li>
+        <li>Motion Blur — <span class="off">Off</span></li>
+        <li>Глубина резкости — <span class="off">Off</span></li>
+        <li>Виньетка — <span class="off">Off</span></li>
+        <li>Max Gibs — <span class="off">0</span></li>
+      </ul>
+    </div>
+
+    <div class="check-card">
+      <h3><span class="icon">✅</span> Оставить</h3>
+      <ul>
+        <li>Дальность прорисовки — <span class="on">1600</span></li>
+        <li>NVIDIA Reflex — <span class="on">On + Boost</span></li>
+        <li>FOV — <span class="on">90</span></li>
+        <li>Анизотропная фильтрация — <span class="on">8x</span></li>
+        <li>Текстуры — <span class="on">High</span></li>
+        <li>V-Sync — <span class="off">Off</span></li>
+      </ul>
+    </div>
+
+    <div class="check-card">
+      <h3><span class="icon">⚙️</span> Команды</h3>
+      <ul>
+        <li><code>grass.distance 0</code> — убрать траву</li>
+        <li><code>grass.on false</code> — выключить траву</li>
+        <li><code>client.headlerp 5</code> — лучше стрельба</li>
+        <li><code>gc.buffer 4096</code> — память под кэш</li>
+        <li><code>fps.limit 0</code> — снять лимит FPS</li>
+        <li><code>graphics.shaderlod 1</code> — упростить шейдеры</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============= СЕССИОННЫЕ ============= -->
+<section id="session">
+  <div class="section-head">
+    <div class="section-label">Каждый заход</div>
+    <h2>Сессионные <span class="accent">команды</span></h2>
+    <p class="subtitle">Вводи один раз при заходе через F1 — убирают инерцию, чинят стрельбу, дают высокий прыжок.</p>
+  </div>
+
+  <div class="session-cmd">
+    <code>client.headlerp_inertia false; gc.buffer 4096; client.headlerp 5; gc.incremental_milliseconds 1; physics.steps 60</code>
+    <button class="copy-btn" data-copy="client.headlerp_inertia false; gc.buffer 4096; client.headlerp 5; gc.incremental_milliseconds 1; physics.steps 60">Копировать</button>
+  </div>
+</section>
+
+<!-- ============= СОВЕТЫ ============= -->
+<section id="tips">
+  <div class="section-head">
+    <div class="section-label">Прокачка</div>
+    <h2>Советы <span class="accent">новичкам</span></h2>
+    <p class="subtitle">Мелочи, которые заметно улучшают игру.</p>
+  </div>
+
+  <div class="tips">
+    <div class="tip">
+      <h3>💾 Сохраняй конфиг</h3>
+      <p>После настройки введи <code>writecfg</code> — иначе всё сбросится.</p>
+    </div>
+    <div class="tip">
+      <h3>🎯 Настрой слоты</h3>
+      <p>Разложи оружие и аптечки по слотам 1–6. В бою секунды решают.</p>
+    </div>
+    <div class="tip">
+      <h3>🔊 Звук важнее картинки</h3>
+      <p>Настрой звук так, чтобы слышать шаги за 30+ метров.</p>
+    </div>
+    <div class="tip">
+      <h3>🗺️ Знай карту</h3>
+      <p>Мониторинги ресурсов помогут быстрее прогрессировать после вайпа.</p>
+    </div>
+    <div class="tip">
+      <h3>⚡ Кэш помогает</h3>
+      <p>Если FPS проседает — <code>gc.collect</code> или бинд на J.</p>
+    </div>
+    <div class="tip">
+      <h3>🖱️ Чувствительность</h3>
+      <p>Привыкай к одной чувствительности и не меняй. Стабильность важнее.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA ============= -->
+<div class="cta">
+  <h2>Готов <span class="accent">доминировать</span>?</h2>
+  <p>Настрой бинды, прокачай FPS и заходи в игру с преимуществом.</p>
+  <a href="#binds" class="btn">❄ Начать настройку</a>
+</div>
+
+<footer>
+  <p>© 2025 Rust Guide · Не связан с Facepunch Studios · Фан-сайт для игроков</p>
+</footer>
+
+<button id="toTop">↑</button>
+
+<script>
+  // ============ 1. СНЕЖИНКИ ============
+  const snowContainer = document.getElementById('snow');
+  const SNOW_COUNT = 60;
+
+  const symbols = ['❄', '❅', '❆', '•', '·'];
+
+  for (let i = 0; i < SNOW_COUNT; i++) {
+    const s = document.createElement('div');
+    s.className = 'snowflake';
+    s.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+
+    const size = Math.random() * 14 + 8;
+    s.style.fontSize = size + 'px';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.animationDuration = (Math.random() * 12 + 8) + 's';
+    s.style.animationDelay = '-' + (Math.random() * 15) + 's';
+    s.style.setProperty('--drift', (Math.random() * 200 - 100) + 'px');
+    s.style.setProperty('--rotate', (Math.random() * 720 - 360) + 'deg');
+    s.style.opacity = Math.random() * 0.5 + 0.4;
+
+    snowContainer.appendChild(s);
+  }
+
+  // ============ 2. ПРОГРЕСС-БАР ============
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    progress.style.width = scrolled + '%';
+  });
+
+  // ============ 3. ШАПКА + КНОПКА НАВЕРХ ============
+  const header = document.getElementById('header');
+  const toTop = document.getElementById('toTop');
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 80) {
+      header.classList.add('scrolled');
+      toTop.classList.add('show');
+    } else {
+      header.classList.remove('scrolled');
+      toTop.classList.remove('show');
+    }
+  });
+
+  toTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ============ 4. ПОЯВЛЕНИЕ ПРИ СКРОЛЛЕ ============
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 60);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+  document.querySelectorAll(
+    'section h2, .subtitle, .section-label, .note, .bind-row, .check-card, .tip, .session-cmd'
+  ).forEach(el => observer.observe(el));
+
+  // ============ 5. СЧЁТЧИКИ ============
+  const counters = document.querySelectorAll('[data-count]');
+  let countersStarted = false;
+
+  function startCounters() {
+    if (countersStarted) return;
+    countersStarted = true;
+    counters.forEach(el => {
+      const target = +el.getAttribute('data-count');
+      const dur = 1800;
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min((now - start) / dur, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.floor(eased * target);
+        if (t < 1) requestAnimationFrame(tick);
+        else el.textContent = target;
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  window.addEventListener('load', () => setTimeout(startCounters, 1200));
+
+  // ============ 6. КОПИРОВАНИЕ ============
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = btn.getAttribute('data-copy');
+      const done = () => {
+        const original = btn.textContent;
+        btn.textContent = '✓ Готово';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+      }
+    });
+  });
+
+  // ============ 7. ПЛАВНЫЙ СКРОЛЛ ============
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>
